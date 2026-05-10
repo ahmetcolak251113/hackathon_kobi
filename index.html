@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KOBI Yonetim Paneli</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f4f6f9;
+            font-family: sans-serif;
+            font-size: 14px;
+        }
+        
+        .sidebar {
+            background-color: #ffffff;
+            min-height: 100vh;
+            border-right: 1px solid #dee2e6;
+            padding-top: 20px;
+        }
+        
+        .sidebar h5 {
+            padding: 0 20px;
+            color: #0d6efd;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+        
+        .sidebar a {
+            color: #495057;
+            text-decoration: none;
+            display: block;
+            padding: 10px 20px;
+            border-radius: 6px;
+            margin: 2px 8px;
+            transition: 0.2s;
+        }
+        
+        .sidebar a:hover {
+            background-color: #e9ecef;
+            color: #212529;
+        }
+        
+        .sidebar a.active {
+            background-color: #0d6efd;
+            color: #fff;
+        }
+        
+        .content-area {
+            padding: 20px;
+        }
+        
+        .card-summary {
+            border-left: 4px solid #0d6efd;
+            background: #fff;
+        }
+        
+        .card-summary.danger {
+            border-left-color: #dc3545;
+        }
+        
+        .card-summary.success {
+            border-left-color: #198754;
+        }
+        
+        .table-responsive {
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        
+        table th {
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+            background: #f8f9fa;
+            z-index: 1;
+        }
+        
+        table td {
+            vertical-align: middle;
+        }
+        /* Tahmin Kartlari Ozel Tasarim */
+        
+        .forecast-card {
+            border-left: 4px solid #17a2b8;
+        }
+        
+        .forecast-card.positive {
+            border-left-color: #198754;
+        }
+        
+        .forecast-card.negative {
+            border-left-color: #dc3545;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-2 sidebar">
+                <h5>KOBI Panel</h5>
+                <a href="#" class="active" onclick="loadDashboard(this)">Ozet Ekrani</a>
+                <a href="#" class="text-success fw-bold" onclick="loadTahminler(this)">Yapay Zeka Tahminleri</a>
+                <hr class="mx-3">
+                <a href="#" onclick="loadTable('kobiler', 'KOBI Kayitlari', this)">Kobiler</a>
+                <a href="#" onclick="loadTable('tedarikciler', 'Tedarikciler', this)">Tedarikciler</a>
+                <a href="#" onclick="loadTable('urunler', 'Urunler & Stok', this)">Urunler</a>
+                <a href="#" onclick="loadTable('musteriler', 'Musteriler', this)">Musteriler</a>
+                <a href="#" onclick="loadTable('siparisler', 'Siparisler', this)">Siparisler</a>
+                <a href="#" onclick="loadTable('siparis_kalemleri', 'Siparis Kalemleri', this)">Siparis Kalemleri</a>
+                <a href="#" onclick="loadTable('tedarik_alimlari', 'Tedarik Alimlari', this)">Tedarik Alimlari</a>
+                <a href="#" onclick="loadTable('alim_kalemleri', 'Alim Kalemleri', this)">Alim Kalemleri</a>
+                <a href="#" onclick="loadTable('stok_hareketleri', 'Stok Hareketleri', this)">Stok Hareketleri</a>
+                <a href="#" onclick="loadTable('kargo_gecikmeleri', 'Kargo Gecikmeleri', this)">Kargo Gecikmeleri</a>
+            </div>
+
+            <div class="col-md-10 content-area">
+
+                <div id="dashboard-view">
+                    <h4 class="mb-4">Isletme Ozeti</h4>
+                    <div class="row" id="ozet-cards">
+                        <div class="col-12 text-muted">Veriler yukleniyor...</div>
+                    </div>
+                </div>
+
+                <div id="tahminler-view" style="display: none;">
+                    <h4 class="mb-4">Yapay Zeka Destekli Gelecek Tahminleri (14 Gunluk)</h4>
+
+                    <div class="row mb-4" id="genel-tahmin-container">
+                        <div class="col-12 text-muted">Yapay zeka modeli egitiliyor, lutfen bekleyin...</div>
+                    </div>
+
+                    <h5 class="mb-3">Urun Bazli Satis Trendleri</h5>
+                    <div class="row" id="urun-tahmin-container">
+                    </div>
+                </div>
+
+                <div id="table-view" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 id="table-title">Liste</h4>
+                        <button class="btn btn-primary btn-sm" onclick="openCrudModal()">+ Yeni Ekle</button>
+                    </div>
+                    <div class="table-responsive shadow-sm bg-white rounded">
+                        <table class="table table-bordered table-hover mb-0">
+                            <thead id="data-thead"></thead>
+                            <tbody id="data-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="crudModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="crudModalTitle">Kayit Islemi</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="crud-form"></form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Iptal</button>
+                    <button class="btn btn-primary" onclick="saveData()">Kaydet</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="stokDusModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Elden Satis (Stok Dus)</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p><strong>Urun:</strong> <span id="dus-urun-adi"></span></p>
+                    <p><strong>Mevcut Stok:</strong> <span id="dus-mevcut-stok"></span></p>
+                    <input type="hidden" id="dus-urun-id">
+                    <label class="form-label">Satilan Adet</label>
+                    <input type="number" class="form-control" id="dus-adet" min="1" value="1">
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Iptal</button>
+                    <button class="btn btn-danger" onclick="executeHizliSatis()">Stoku Dus</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="stokArtirModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Manuel Stok Artir</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p><strong>Urun:</strong> <span id="artir-urun-adi"></span></p>
+                    <p><strong>Mevcut Stok:</strong> <span id="artir-mevcut-stok"></span></p>
+                    <input type="hidden" id="artir-urun-id">
+                    <label class="form-label">Eklenecek Adet</label>
+                    <input type="number" class="form-control" id="artir-adet" min="1" value="1">
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Iptal</button>
+                    <button class="btn btn-success" onclick="executeStokArtir()">Stoku Artir</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const API_URL = "http://localhost:8000/api";
+        let currentEndpoint = "";
+        let currentEditId = null;
+
+        // Veritabani Tablolarinin Form Semalari
+        const schemas = {
+            kobiler: ['kullanici_adi', 'isletme_adi', 'vergi_no', 'yetkili_kisi', 'telefon', 'email', 'adres'],
+            tedarikciler: ['kobi_id', 'ad', 'yetkili', 'telefon', 'email', 'adres', 'vergi_no'],
+            urunler: ['kobi_id', 'urun_kodu', 'ad', 'kategori', 'birim', 'stok_miktari', 'kritik_stok_esigi', 'alis_fiyati', 'satis_fiyati', 'birim_agirlik', 'aciklama'],
+            musteriler: ['kobi_id', 'ad_soyad', 'telefon', 'email', 'teslimat_adresi', 'notlar'],
+            siparisler: ['kobi_id', 'musteri_id', 'siparis_no', 'toplam_tutar', 'durum', 'kargo_firmasi', 'kargo_takip_no', 'teslim_tarihi', 'notlar'],
+            siparis_kalemleri: ['siparis_id', 'urun_id', 'adet', 'birim_fiyat', 'ara_toplam'],
+            tedarik_alimlari: ['kobi_id', 'tedarikci_id', 'fatura_no', 'toplam_tutar'],
+            alim_kalemleri: ['alim_id', 'urun_id', 'miktar', 'birim_fiyat'],
+            stok_hareketleri: ['urun_id', 'tur', 'miktar', 'onceki_stok', 'sonraki_stok', 'ilgili_id'],
+            kargo_gecikmeleri: ['siparis_id', 'sebep', 'musteri_bilgilendirildi', 'yoneticiye_bildirildi']
+        };
+
+        // Arayuz Yonetimi Yardimci Fonksiyonlari
+        function setActiveMenu(el) {
+            document.querySelectorAll('.sidebar a').forEach(a => a.classList.remove('active'));
+            if (el) el.classList.add('active');
+        }
+
+        function hideAllViews() {
+            document.getElementById('dashboard-view').style.display = 'none';
+            document.getElementById('table-view').style.display = 'none';
+            document.getElementById('tahminler-view').style.display = 'none';
+        }
+
+        // --- 1. OZET EKRANI ---
+        async function loadDashboard(el) {
+            setActiveMenu(el);
+            hideAllViews();
+            document.getElementById('dashboard-view').style.display = 'block';
+
+            try {
+                const res = await fetch(`${API_URL}/ozet`);
+                const data = await res.json();
+                document.getElementById('ozet-cards').innerHTML = `
+                <div class="col-md-4 mb-3"><div class="card card-summary shadow-sm p-3"><div class="text-muted small">Kayitli Urun</div><div class="fs-3 fw-bold">${data.toplam_urun}</div></div></div>
+                <div class="col-md-4 mb-3"><div class="card card-summary danger shadow-sm p-3"><div class="text-muted small">Kritik Stok Uyarisi</div><div class="fs-3 fw-bold text-danger">${data.kritik_stok}</div></div></div>
+                <div class="col-md-4 mb-3"><div class="card card-summary shadow-sm p-3"><div class="text-muted small">Toplam Siparis</div><div class="fs-3 fw-bold">${data.toplam_siparis}</div></div></div>
+                <div class="col-md-4 mb-3"><div class="card card-summary success shadow-sm p-3"><div class="text-muted small">Musteriler</div><div class="fs-3 fw-bold text-success">${data.toplam_musteri}</div></div></div>
+                <div class="col-md-4 mb-3"><div class="card card-summary shadow-sm p-3"><div class="text-muted small">Tedarikciler</div><div class="fs-3 fw-bold">${data.toplam_tedarikci}</div></div></div>
+                <div class="col-md-4 mb-3"><div class="card card-summary shadow-sm p-3"><div class="text-muted small">Toplam Alim Islem</div><div class="fs-3 fw-bold">${data.toplam_alim}</div></div></div>
+            `;
+            } catch (e) {
+                document.getElementById('ozet-cards').innerHTML = `<div class="alert alert-danger w-100">API baglanti hatasi. Sunucu calisiyor mu?</div>`;
+            }
+        }
+
+        // --- 2. TAHMINLER EKRANI ---
+        async function loadTahminler(el) {
+            setActiveMenu(el);
+            hideAllViews();
+            document.getElementById('tahminler-view').style.display = 'block';
+
+            const genelContainer = document.getElementById('genel-tahmin-container');
+            const urunContainer = document.getElementById('urun-tahmin-container');
+
+            genelContainer.innerHTML = '<div class="col-12 text-muted">Genel tahmin hesaplaniyor...</div>';
+            urunContainer.innerHTML = '<div class="col-12 text-muted">Urun tahminleri hesaplaniyor...</div>';
+
+            // Genel Tahmini Cek
+            try {
+                const resGenel = await fetch(`${API_URL}/tahmin/genel?gun_sayisi=14`);
+                const dataGenel = await resGenel.json();
+
+                if (dataGenel.error) {
+                    genelContainer.innerHTML = `<div class="alert alert-warning">${dataGenel.error}</div>`;
+                } else {
+                    let trendColor = dataGenel.trend === 'Pozitif' ? 'text-success' : 'text-danger';
+                    genelContainer.innerHTML = `
+                    <div class="col-md-12">
+                        <div class="card shadow-sm border-0 border-start border-primary border-4">
+                            <div class="card-body">
+                                <h5 class="card-title text-muted">Genel Ciro Beklentisi</h5>
+                                <div class="row mt-3">
+                                    <div class="col-md-3">
+                                        <p class="mb-0 small">Trend Yönü</p>
+                                        <h4 class="fw-bold ${trendColor}">${dataGenel.trend}</h4>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <p class="mb-0 small">Degisim Orani</p>
+                                        <h4 class="fw-bold">%${dataGenel.degisim_orani}</h4>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p class="mb-0 small">Tahmin Edilen Ciro Degisimi</p>
+                                        <h5 class="text-secondary">${dataGenel.baslangic_tahmini} TL &rarr; ${dataGenel.bitis_tahmini} TL</h5>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                }
+            } catch (e) {
+                genelContainer.innerHTML = `<div class="alert alert-danger">Genel tahmin verisi alinamadi.</div>`;
+            }
+
+            // Urun Tahminlerini Cek
+            try {
+                const resUrun = await fetch(`${API_URL}/tahmin/urunler?gun_sayisi=14`);
+                const dataUrun = await resUrun.json();
+
+                let urunHtml = "";
+                dataUrun.forEach(urun => {
+                    const t = urun.tahmin_verisi;
+                    if (t.error) {
+                        urunHtml += `
+                        <div class="col-md-4 mb-3">
+                            <div class="card shadow-sm h-100 forecast-card">
+                                <div class="card-body">
+                                    <h6 class="card-title fw-bold">[${urun.urun_kodu}] ${urun.urun_adi}</h6>
+                                    <p class="text-muted small">${t.error}</p>
+                                </div>
+                            </div>
+                        </div>`;
+                    } else {
+                        let cardClass = t.trend === 'Pozitif' ? 'positive' : 'negative';
+                        let badgeClass = t.trend === 'Pozitif' ? 'bg-success' : 'bg-danger';
+                        urunHtml += `
+                        <div class="col-md-4 mb-3">
+                            <div class="card shadow-sm h-100 forecast-card ${cardClass}">
+                                <div class="card-body">
+                                    <h6 class="card-title fw-bold">[${urun.urun_kodu}] ${urun.urun_adi}</h6>
+                                    <span class="badge ${badgeClass} mb-2">${t.trend} Trend (%${t.degisim_orani})</span>
+                                    <div class="small mt-2">
+                                        <strong>Gunluk Satis Beklentisi:</strong><br>
+                                        Baslangic: ${t.baslangic_tahmini} adet<br>
+                                        14. Gun: ${t.bitis_tahmini} adet
+                                    </div>
+                                </div>
+                            </div>
+                        </div>`;
+                    }
+                });
+                urunContainer.innerHTML = urunHtml;
+
+            } catch (e) {
+                urunContainer.innerHTML = `<div class="alert alert-danger">Urun tahmin verileri alinamadi.</div>`;
+            }
+        }
+
+        // --- 3. TABLO (CRUD) EKRANI ---
+        async function loadTable(endpoint, title, el) {
+            setActiveMenu(el);
+            hideAllViews();
+            document.getElementById('table-view').style.display = 'block';
+            document.getElementById('table-title').innerText = title;
+            currentEndpoint = endpoint;
+
+            const thead = document.getElementById('data-thead');
+            const tbody = document.getElementById('data-tbody');
+            thead.innerHTML = "";
+            tbody.innerHTML = `<tr><td class="text-center">Veriler cekiliyor...</td></tr>`;
+
+            try {
+                const res = await fetch(`${API_URL}/${endpoint}`);
+                const data = await res.json();
+
+                if (!Array.isArray(data) || data.length === 0) {
+                    tbody.innerHTML = `<tr><td class="text-center text-muted">Kayit bulunamadi.</td></tr>`;
+                    return;
+                }
+
+                const keys = Object.keys(data[0]);
+
+                // Basliklari Olustur
+                let headHtml = "<tr>";
+                keys.forEach(k => headHtml += `<th>${k.toUpperCase()}</th>`);
+                headHtml += `<th>ISLEMLER</th></tr>`;
+                thead.innerHTML = headHtml;
+
+                // Verileri Doldur
+                let bodyHtml = "";
+                data.forEach(row => {
+                    bodyHtml += "<tr>";
+                    keys.forEach(k => bodyHtml += `<td>${row[k] !== null ? row[k] : '-'}</td>`);
+
+                    // Islemler Sutunu
+                    let rowDataRaw = JSON.stringify(row).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                    bodyHtml += `<td>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-primary" onclick="openCrudModal(${row.id}, '${rowDataRaw}')">Duzenle</button>
+                        <button class="btn btn-outline-danger" onclick="deleteData(${row.id})">Sil</button>
+                    </div>`;
+
+                    // Urunlere ozel butonlar
+                    if (endpoint === 'urunler') {
+                        bodyHtml += `
+                    <div class="btn-group btn-group-sm mt-1">
+                        <button class="btn btn-danger" onclick="openDusModal(${row.id}, '${row.ad}', ${row.stok_miktari})">Satis Yap</button>
+                        <button class="btn btn-success" onclick="openArtirModal(${row.id}, '${row.ad}', ${row.stok_miktari})">Stok Artir</button>
+                    </div>`;
+                    }
+                    bodyHtml += `</td></tr>`;
+                });
+                tbody.innerHTML = bodyHtml;
+
+            } catch (e) {
+                tbody.innerHTML = `<tr><td class="text-center text-danger">Veriler alinamadi.</td></tr>`;
+            }
+        }
+
+        // --- CRUD FONKSIYONLARI ---
+        function openCrudModal(id = null, rowDataStr = null) {
+            currentEditId = id;
+            const rowData = rowDataStr ? JSON.parse(rowDataStr.replace(/&quot;/g, '"')) : null;
+            document.getElementById('crudModalTitle').innerText = id ? 'Kaydi Guncelle' : 'Yeni Kayit Ekle';
+
+            const fields = schemas[currentEndpoint];
+            let formHtml = '<div class="row">';
+
+            fields.forEach(f => {
+                let val = rowData && rowData[f] !== null ? rowData[f] : '';
+                let type = 'text';
+                if (f.includes('id') || f.includes('miktar') || f.includes('tutar') || f.includes('fiyat') || f.includes('agirlik') || f.includes('adet')) type = 'number';
+
+                formHtml += `<div class="col-md-6 mb-3">`;
+                if (f.includes('bilgilendirildi')) {
+                    let checked = val ? 'checked' : '';
+                    formHtml += `
+                    <div class="form-check mt-4">
+                        <input type="checkbox" class="form-check-input" id="inp-${f}" ${checked}>
+                        <label class="form-check-label">${f}</label>
+                    </div>`;
+                } else {
+                    formHtml += `
+                    <label class="form-label">${f}</label>
+                    <input type="${type}" class="form-control" id="inp-${f}" value="${val}" ${type==='number'?'step="any"':''}>`;
+                }
+                formHtml += `</div>`;
+            });
+            formHtml += '</div>';
+            document.getElementById('crud-form').innerHTML = formHtml;
+            new bootstrap.Modal(document.getElementById('crudModal')).show();
+        }
+
+        async function saveData() {
+            const fields = schemas[currentEndpoint];
+            let payload = {};
+
+            fields.forEach(f => {
+                if (f.includes('bilgilendirildi')) {
+                    payload[f] = document.getElementById(`inp-${f}`).checked;
+                } else {
+                    let val = document.getElementById(`inp-${f}`).value;
+                    if (val !== "") {
+                        if (document.getElementById(`inp-${f}`).type === 'number') val = parseFloat(val);
+                        payload[f] = val;
+                    }
+                }
+            });
+
+            const method = currentEditId ? 'PUT' : 'POST';
+            const url = currentEditId ? `${API_URL}/${currentEndpoint}/${currentEditId}` : `${API_URL}/${currentEndpoint}`;
+
+            try {
+                const res = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                if (res.ok) {
+                    bootstrap.Modal.getInstance(document.getElementById('crudModal')).hide();
+                    loadTable(currentEndpoint, document.getElementById('table-title').innerText);
+                } else {
+                    const err = await res.json();
+                    alert("Hata: " + (err.detail || "Islem basarisiz"));
+                }
+            } catch (e) {
+                alert("Baglanti hatasi!");
+            }
+        }
+
+        async function deleteData(id) {
+            if (!confirm('Bu kaydi silmek istediginize emin misiniz?')) return;
+            try {
+                const res = await fetch(`${API_URL}/${currentEndpoint}/${id}`, {
+                    method: 'DELETE'
+                });
+                if (res.ok) {
+                    loadTable(currentEndpoint, document.getElementById('table-title').innerText);
+                } else {
+                    alert("Silme islemi basarisiz.");
+                }
+            } catch (e) {
+                alert("Baglanti hatasi!");
+            }
+        }
+
+        // --- Ozel Urun Islemleri (Satis Dus / Stok Artir) ---
+        function openDusModal(id, ad, stok) {
+            document.getElementById('dus-urun-id').value = id;
+            document.getElementById('dus-urun-adi').innerText = ad;
+            document.getElementById('dus-mevcut-stok').innerText = stok;
+            document.getElementById('dus-adet').value = 1;
+            document.getElementById('dus-adet').max = stok;
+            new bootstrap.Modal(document.getElementById('stokDusModal')).show();
+        }
+
+        async function executeHizliSatis() {
+            const id = parseInt(document.getElementById('dus-urun-id').value);
+            const adet = parseFloat(document.getElementById('dus-adet').value);
+            if (!adet || adet <= 0) return alert('Gecerli bir adet giriniz.');
+
+            try {
+                const res = await fetch(`${API_URL}/hizli_satis`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        urun_id: id,
+                        adet: adet
+                    })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    alert(data.mesaj + "\nYeni Stok: " + data.yeni_stok);
+                    bootstrap.Modal.getInstance(document.getElementById('stokDusModal')).hide();
+                    loadTable(currentEndpoint, document.getElementById('table-title').innerText);
+                } else {
+                    alert("Hata: " + data.detail);
+                }
+            } catch (e) {
+                alert('Baglanti hatasi');
+            }
+        }
+
+        function openArtirModal(id, ad, stok) {
+            document.getElementById('artir-urun-id').value = id;
+            document.getElementById('artir-urun-adi').innerText = ad;
+            document.getElementById('artir-mevcut-stok').innerText = stok;
+            document.getElementById('artir-adet').value = 1;
+            new bootstrap.Modal(document.getElementById('stokArtirModal')).show();
+        }
+
+        async function executeStokArtir() {
+            const id = parseInt(document.getElementById('artir-urun-id').value);
+            const adet = parseFloat(document.getElementById('artir-adet').value);
+            if (!adet || adet <= 0) return alert('Gecerli bir adet giriniz.');
+
+            try {
+                const res = await fetch(`${API_URL}/stok_artir?urun_id=${id}&miktar=${adet}`, {
+                    method: 'POST'
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    alert(data.mesaj + "\nYeni Stok: " + data.yeni_stok);
+                    bootstrap.Modal.getInstance(document.getElementById('stokArtirModal')).hide();
+                    loadTable(currentEndpoint, document.getElementById('table-title').innerText);
+                } else {
+                    alert("Hata: " + data.detail);
+                }
+            } catch (e) {
+                alert('Baglanti hatasi');
+            }
+        }
+
+        // Ilk Acilis
+        document.addEventListener("DOMContentLoaded", () => {
+            loadDashboard(document.querySelector('.sidebar a.active'));
+        });
+    </script>
+</body>
+
+</html>
