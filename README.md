@@ -326,6 +326,3 @@ Bu proje **Yapay Zeka ve Teknolojisi Akademisi Hackathon** kapsamında geliştir
 
 ---
 
-##  Lisans
-
-Tüm hakları saklıdır. Hackathon proje kapsamında üretilmiştir.
