@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KOBİ Akıllı Yönetim Paneli</title>
+    <meta name="description" content="KOBİ'ler için yapay zeka destekli stok, kargo ve sipariş yönetim paneli.">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --sidebar-bg: #1a1f2e;
+            --sidebar-text: #a0aec0;
+            --sidebar-active-bg: #3182ce;
+            --sidebar-active-text: #fff;
+            --sidebar-hover-bg: #2d3748;
+            --accent: #3182ce;
+            --accent-light: #ebf4ff;
+            --danger: #e53e3e;
+            --success: #38a169;
+            --warning: #d69e2e;
+            --bg: #f0f4f8;
+            --card-bg: #ffffff;
+            --border: #e2e8f0;
+            --text-primary: #1a202c;
+            --text-muted: #718096;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg);
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        /* ── SIDEBAR ── */
+        .sidebar {
+            background-color: var(--sidebar-bg);
+            min-height: 100vh;
+            padding-top: 0;
+            display: flex;
+            flex-direction: column;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .sidebar-brand {
+            padding: 20px 20px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            margin-bottom: 8px;
+        }
+
+        .sidebar-brand h5 {
+            color: #fff;
+            font-weight: 700;
+            font-size: 15px;
+            margin: 0;
+            letter-spacing: 0.3px;
+        }
+
+        .sidebar-brand small {
+            color: var(--sidebar-text);
+            font-size: 11px;
+        }
+
+        .sidebar-section {
+            padding: 8px 12px 4px;
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            color: rgba(255, 255, 255, 0.3);
+            text-transform: uppercase;
+        }
+
+        .sidebar a {
+            color: var(--sidebar-text);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 16px;
+            border-radius: 6px;
+            margin: 1px 8px;
+            transition: all 0.15s;
+            font-size: 13.5px;
+        }
+
+        .sidebar a:hover {
+            background-color: var(--sidebar-hover-bg);
+            color: #fff;
+        }
+
+        .sidebar a.active {
+            background-color: var(--sidebar-active-bg);
+            color: var(--sidebar-active-text);
+            font-weight: 600;
+        }
+
+        /* ── CONTENT ── */
+        .content-area {
+            padding: 28px 32px;
+            min-height: 100vh;
+        }
+
+        .page-header {
+            margin-bottom: 24px;
+        }
+
+        .page-header h4 {
+            font-weight: 700;
+            font-size: 20px;
+            margin: 0;
+            color: var(--text-primary);
+        }
+
+        .page-header p {
+            margin: 4px 0 0;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        /* ── CARDS ── */
+        .stat-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px 22px;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            transition: box-shadow 0.2s;
+        }
+
+        .stat-card.blue { border-top: 4px solid #3b82f6; }
+        .stat-card.red { border-top: 4px solid #ef4444; }
+        .stat-card.green { border-top: 4px solid #22c55e; }
+        .stat-card.yellow { border-top: 4px solid #eab308; }
+
+        .stat-card:hover {
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+        }
+
+        .stat-value {
+            font-size: 26px;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        /* ── CHART CARD ── */
+        .chart-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            padding: 20px 24px;
+            height: 100%;
+        }
+
+        .chart-card-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+
+        .chart-card-sub {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+        }
+
+        /* ── FILTER BAR ── */
+        .filter-bar {
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: flex-end;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .filter-bar .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1;
+            min-width: 140px;
+        }
+
+        .filter-bar label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .time-pills {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .time-pill {
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: 1.5px solid var(--border);
+            background: transparent;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+
+        .time-pill:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: var(--accent-light);
+        }
+
+        .time-pill.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+            font-weight: 600;
+        }
+
+        /* ── MOD TOGGLE ── */
+        .mod-toggle {
+            display: flex;
+            background: #f7fafc;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 3px;
+            gap: 2px;
+        }
+
+        .mod-btn {
+            padding: 6px 16px;
+            border-radius: 6px;
+            border: none;
+            background: transparent;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .mod-btn.active {
+            background: #fff;
+            color: var(--accent);
+            font-weight: 700;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* ── TABLES ── */
+        .table-responsive {
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        table th {
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+            background: #f8fafc;
+            z-index: 1;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        table td {
+            vertical-align: middle;
+        }
+
+        /* ── AKSIYON KARTI ── */
+        .aksiyon-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .aksiyon-row:last-child {
+            border-bottom: none;
+        }
+
+        /* ── SIPARIS KARTI ── */
+        .siparis-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            margin-bottom: 14px;
+            overflow: hidden;
+            transition: box-shadow 0.2s;
+        }
+
+        .siparis-card:hover {
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.07);
+        }
+
+        /* ── SCROLLBAR ── */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 3px;
+        }
+
+        /* No-data state */
+        .no-data {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+
+        .no-data svg {
+            margin-bottom: 12px;
+            opacity: 0.3;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container-fluid p-0">
+        <div class="row g-0">
+
+            <!-- ══ SIDEBAR ══ -->
+            <div class="col-md-2 sidebar">
+                <div class="sidebar-brand">
+                    <h5>KOBİ Paneli</h5>
+                    <small>Akıllı Yönetim Sistemi</small>
+                </div>
+
+                <div class="sidebar-section">Ana Menü</div>
+                <a href="#" class="active" id="menu-dashboard" onclick="loadDashboard(this)">
+                    Özet & Aksiyonlar
+                </a>
+                <a href="#" id="menu-tahmin" onclick="loadTahminler(this)">
+                    Satış Tahminleri
+                </a>
+                <a href="#" id="menu-rapor" onclick="loadAIRapor(this)">
+                    İşletme Raporu
+                </a>
+                <a href="#" id="menu-grafik" onclick="loadGrafikler(this)">
+                    Satış Grafikleri
+                </a>
+                <a href="#" id="menu-siparis" onclick="loadSiparisOnay(this)">
+                    Sipariş Onayları
+                    <span id="siparis-badge" class="badge bg-danger rounded-pill ms-auto d-none">0</span>
+                </a>
+
+                <div class="sidebar-section mt-2">Veri Yönetimi</div>
+                <a href="#" onclick="loadTable('urunler', 'Ürünler & Stok', this)">Ürünler</a>
+                <a href="#" onclick="loadTable('kargo_takip', 'Kargo Takip', this)">Kargo Takip</a>
+                <a href="#" onclick="loadTable('tedarikciler', 'Tedarikçiler', this)">Tedarikçiler</a>
+                <a href="#" onclick="loadTable('depo_malzemeleri', 'Depo Malzemeleri', this)">Depo</a>
+                <a href="#" onclick="loadTable('musteriler', 'Müşteriler', this)">Müşteriler</a>
+            </div>
+
+            <!-- ══ CONTENT ══ -->
+            <div class="col-md-10 content-area">
+                <div id="weather-alert" class="alert alert-warning alert-dismissible d-none mb-4" role="alert">
+                    <span id="weather-alert-text"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+
+                <!-- ▸ DASHBOARD -->
+                <div id="dashboard-view">
+                    <div class="page-header">
+                        <h4>İşletme Özeti</h4>
+                        <p>Güncel stok, müşteri ve kargo durumuna genel bakış</p>
+                    </div>
+                    <div class="row g-3 mb-4" id="ozet-cards"></div>
+                    <h6 class="fw-bold mb-3" style="color:var(--text-primary)">Yapay Zeka Asistanı — Aksiyon Önerileri</h6>
+                    <div class="chart-card p-0 mb-4">
+                        <div id="kritik-aksiyonlar-listesi">
+                            <div class="p-4 text-muted">Kontrol ediliyor...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ▸ TAHMİNLER -->
+                <div id="tahminler-view" style="display:none;">
+                    <div class="page-header">
+                        <h4>Satış Tahminleri</h4>
+                        <p>Prophet ML ile 14 günlük gelecek satış projeksiyonu</p>
+                    </div>
+                    <div class="mb-4" id="genel-tahmin-container"></div>
+                    <div class="row g-3" id="urun-tahmin-container"></div>
+                </div>
+
+                <!-- ▸ AI RAPOR -->
+                <div id="ai-rapor-view" style="display:none;">
+                    <div class="page-header d-flex justify-content-between align-items-start">
+                        <div>
+                            <h4>Yapay Zeka İşletme Raporu</h4>
+                            <p>Gemini AI ile otomatik oluşturulan iş analizi</p>
+                        </div>
+                        <button class="btn btn-primary btn-sm" onclick="fetchAIRapor()">Yenile</button>
+                    </div>
+                    <div class="chart-card">
+                        <div id="ai-rapor-content" style="line-height:1.8;">Rapor oluşturuluyor...</div>
+                    </div>
+                </div>
+
+                <!-- ▸ GRAFİKLER -->
+                <div id="grafikler-view" style="display:none;">
+                    <div class="page-header">
+                        <h4>Satış Analizi Grafikleri</h4>
+                        <p>Bar ve daire grafiklerle dönemsel satış analizi</p>
+                    </div>
+
+                    <!-- Filtre Çubuğu -->
+                    <div class="filter-bar">
+                        <!-- Zaman Dilimi Pills -->
+                        <div class="filter-group">
+                            <label>Zaman Dilimi</label>
+                            <div class="time-pills" id="time-pills-container">
+                                <button class="time-pill" data-dilim="gunluk"
+                                    onclick="setZamanDilimi(this,'gunluk')">Günlük</button>
+                                <button class="time-pill" data-dilim="haftalik"
+                                    onclick="setZamanDilimi(this,'haftalik')">Haftalık</button>
+                                <button class="time-pill active" data-dilim="aylik"
+                                    onclick="setZamanDilimi(this,'aylik')">Aylık</button>
+                                <button class="time-pill" data-dilim="yillik"
+                                    onclick="setZamanDilimi(this,'yillik')">Yıllık</button>
+                                <button class="time-pill" data-dilim="tumzamanlar"
+                                    onclick="setZamanDilimi(this,'tumzamanlar')">Tüm Zamanlar</button>
+                            </div>
+                        </div>
+
+                        <!-- Ürün Seçici -->
+                        <div class="filter-group" id="urun-secici-wrap" style="max-width:220px;">
+                            <label>Ürün (Tek Ürün Modu)</label>
+                            <select id="grafik-urun" class="form-select form-select-sm shadow-sm"
+                                onchange="onUrunSecildi()">
+                                <option value="">Yükleniyor...</option>
+                            </select>
+                        </div>
+
+                        <!-- Mod Toggle -->
+                        <div class="filter-group" style="max-width:200px;">
+                            <label>Görünüm Modu</label>
+                            <div class="mod-toggle">
+                                <button class="mod-btn" id="btn-tek" onclick="setGrafikMod('tek')">Tek
+                                    Ürün</button>
+                                <button class="mod-btn active" id="btn-karsilastir"
+                                    onclick="setGrafikMod('karsilastir')">Karşılaştır</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ░░ TEK ÜRÜN MODU ░░ -->
+                    <div id="grafik-tek-mod" style="display:none;">
+                        <div class="row g-3">
+                            <!-- Bar Grafik -->
+                            <div class="col-lg-8">
+                                <div class="chart-card">
+                                    <div class="chart-card-title" id="trend-baslik">Ürün Satış Trendi</div>
+                                    <div class="chart-card-sub" id="trend-alt">Seçili zaman dilimine göre satış miktarı
+                                        (Bar Grafik)</div>
+                                    <div style="position:relative; height:320px;">
+                                        <canvas id="barChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Daire Grafik -->
+                            <div class="col-lg-4">
+                                <div class="chart-card">
+                                    <div class="chart-card-title">Pazar Payı Dağılımı</div>
+                                    <div class="chart-card-sub">Seçili dönemdeki ürün dağılımı (Daire Grafik)</div>
+                                    <div style="position:relative; height:320px;">
+                                        <canvas id="pieChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ░░ KARŞILAŞTIRMA MODU ░░ -->
+                    <div id="grafik-karsilastir-mod">
+                        <div class="row g-3">
+                            <!-- Karşılaştırmalı Bar -->
+                            <div class="col-lg-8">
+                                <div class="chart-card">
+                                    <div class="chart-card-title">Tüm Ürünler — Karşılaştırmalı Satış</div>
+                                    <div class="chart-card-sub">Seçili dönemde tüm ürünlerin satış miktarı yan yana (Bar
+                                        Grafik)</div>
+                                    <div style="position:relative; height:360px;">
+                                        <canvas id="karsilastirChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Daire (karşılaştır modu) -->
+                            <div class="col-lg-4">
+                                <div class="chart-card">
+                                    <div class="chart-card-title">Dönem Pazar Payı</div>
+                                    <div class="chart-card-sub">Tüm ürünlerin toplam payı (Daire Grafik)</div>
+                                    <div style="position:relative; height:360px;">
+                                        <canvas id="karsilastirPieChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ▸ SİPARİŞ ONAY -->
+                <div id="siparis-onay-view" style="display:none;">
+                    <div class="page-header d-flex justify-content-between align-items-start">
+                        <div>
+                            <h4>WhatsApp Sipariş Onayları</h4>
+                            <p>WhatsApp üzerinden gelen siparişleri buradan onaylayın veya reddedin</p>
+                        </div>
+                        <button class="btn btn-outline-secondary btn-sm" onclick="loadSiparisOnay(null)">Yenile</button>
+                    </div>
+                    <div id="siparis-onay-listesi">
+                        <div class="text-muted p-3">Yükleniyor...</div>
+                    </div>
+                </div>
+
+                <!-- ▸ TABLO VIEW -->
+                <div id="table-view" style="display:none;">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0 fw-bold" id="table-title">Liste</h5>
+                        <button class="btn btn-primary btn-sm" onclick="openCrudModal()">+ Yeni Ekle</button>
+                    </div>
+                    <div class="chart-card p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead id="data-thead"></thead>
+                                <tbody id="data-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div><!-- /content-area -->
+        </div>
+    </div>
+
+    <!-- ══ MODALS ══ -->
+
+    <!-- CRUD Modal -->
+    <div class="modal fade" id="crudModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="crudModalTitle">Kayıt İşlemi</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="crud-form"></form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button class="btn btn-primary" onclick="saveData()">Kaydet</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Aksiyon (AI Taslak) Modal -->
+    <div class="modal fade" id="aksiyonModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Yapay Zeka Taslağı</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <textarea id="aksiyon-sonuc-text" class="form-control" rows="9"
+                        style="font-family:'Inter',sans-serif; font-size:13px; resize:vertical;"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-success"
+                        onclick="navigator.clipboard.writeText(document.getElementById('aksiyon-sonuc-text').value)"
+                        data-bs-dismiss="modal">Mesajı Kopyala</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stok Modal -->
+    <div class="modal fade" id="stokModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="stokModalTitle">Stok İşlemi</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="stok-urun-id">
+                    <input type="hidden" id="stok-islem-tipi">
+                    <label class="form-label fw-semibold">Adet</label>
+                    <input type="number" class="form-control" id="stok-adet" min="1" value="1">
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button class="btn btn-primary" onclick="executeStok()">Onayla</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/app.js"></script>
+</body>
+
+</html>

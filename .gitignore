@@ -1,0 +1,19 @@
+# Environments
+.env
+.env.*
+venv/
+env/
+ENV/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Databases
+*.sqlite3
+*.db
+
+# macOS
+.DS_Store

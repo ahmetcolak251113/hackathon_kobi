@@ -1,0 +1,24 @@
+# Web Framework
+Flask==3.0.0
+Werkzeug==3.0.0
+
+# API & HTTP
+requests==2.33.1
+python-dotenv==1.2.2
+
+# AI & LLM (Gemini 2.0 SDK)
+google-genai==2.0.1
+pydantic==2.9.0
+pydantic-core==2.23.2
+
+# Database (seçin ve açıklama satırını kaldırın)
+# PostgreSQL ile:
+# psycopg2-binary==2.9.9
+# SQLAlchemy==2.0.0
+
+# MySQL ile:
+# pymysql==1.1.0
+# SQLAlchemy==2.0.0
+
+# Logging & Monitoring
+python-json-logger==2.0.7

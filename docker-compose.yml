@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  # -------------------------
+  # MOCK KARGO
+  # -------------------------
+  mock-cargo-postgres:
+    image: postgres:16
+    container_name: mock-cargo-postgres
+    environment:
+      POSTGRES_DB: mock_cargo_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d mock_cargo_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  mock_kargo:
+    build: 
+      context: ./mock_kargo
+      dockerfile: Dockerfile
+    container_name: mock-cargo-api
+    depends_on:
+      mock-cargo-postgres:
+        condition: service_healthy
+    env_file:
+      - ./mock_kargo/.env
+    ports:
+      - "3000:8000"
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./mock_kargo:/app
+
+  # -------------------------
+  # KOBI PANEL
+  # -------------------------
+  kobi_panel:
+    build:
+      context: ./kobi_panel
+      dockerfile: Dockerfile
+    container_name: kobi_panel
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./kobi_panel/.env
+    environment:
+      # Kendi aralarındaki iletişim için Docker ağını kullanıyoruz
+      KOBI_WHATSAPP_BOT_URL: "http://whatsapp_bot:5000"
+      MOCK_CARGO_URL: "http://mock_kargo:8000"
+    volumes:
+      - ./kobi_panel:/app
+
+  # -------------------------
+  # WHATSAPP BOT
+  # -------------------------
+  whatsapp_bot:
+    build:
+      context: ./whatsapp_bot
+      dockerfile: Dockerfile
+    container_name: whatsapp_bot
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./whatsapp_bot/.env
+    environment:
+      # Kobi paneli Docker ağında bulabilmesi için
+      KOBI_API_BASE_URL: "http://kobi_panel:8000"
+    volumes:
+      - ./whatsapp_bot:/app
+
+volumes:
+  postgres_data:
